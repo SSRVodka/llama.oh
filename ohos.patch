@@ -1,0 +1,122 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7b2a1845..62404670 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -7,6 +7,10 @@ set(CMAKE_WARN_UNUSED_CLI YES)
+ 
+ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+ 
++# build for openharmony
++add_compile_definitions(__OPENHARMONY__)
++add_link_options(-Wl,-rpath=$ORIGIN)
++
+ if (NOT XCODE AND NOT MSVC AND NOT CMAKE_BUILD_TYPE)
+     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+diff --git a/common/common.cpp b/common/common.cpp
+index d2b0d50e..d3718db5 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -159,7 +159,7 @@ int32_t cpu_get_num_physical_cores() {
+     return n_threads > 0 ? (n_threads <= 4 ? n_threads : n_threads / 2) : 4;
+ }
+ 
+-#if defined(__x86_64__) && defined(__linux__) && !defined(__ANDROID__)
++#if defined(__x86_64__) && defined(__linux__) && !defined(__ANDROID__) && !defined(__OPENHARMONY__)
+ #include <pthread.h>
+ 
+ static void cpuid(unsigned leaf, unsigned subleaf,
+@@ -213,7 +213,7 @@ static int cpu_count_math_cpus(int n_cpu) {
+  * Returns number of CPUs on system that are useful for math.
+  */
+ int32_t cpu_get_num_math() {
+-#if defined(__x86_64__) && defined(__linux__) && !defined(__ANDROID__)
++#if defined(__x86_64__) && defined(__linux__) && !defined(__ANDROID__) && !defined(__OPENHARMONY__)
+     int n_cpu = sysconf(_SC_NPROCESSORS_ONLN);
+     if (n_cpu < 1) {
+         return cpu_get_num_physical_cores();
+diff --git a/examples/server/CMakeLists.txt b/examples/server/CMakeLists.txt
+index aee90388..1b1a0856 100644
+--- a/examples/server/CMakeLists.txt
++++ b/examples/server/CMakeLists.txt
+@@ -10,6 +10,7 @@ if (MINGW)
+ endif()
+ 
+ set(TARGET_SRCS
++    server.h
+     server.cpp
+     utils.hpp
+     httplib.h
+@@ -31,7 +32,7 @@ foreach(asset ${PUBLIC_ASSETS})
+     set_source_files_properties(${output} PROPERTIES GENERATED TRUE)
+ endforeach()
+ 
+-add_executable(${TARGET} ${TARGET_SRCS})
++add_library(${TARGET} SHARED ${TARGET_SRCS})
+ install(TARGETS ${TARGET} RUNTIME)
+ 
+ target_include_directories(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR})
+diff --git a/examples/server/httplib.h b/examples/server/httplib.h
+index 593beb50..e8b17760 100644
+--- a/examples/server/httplib.h
++++ b/examples/server/httplib.h
+@@ -3592,7 +3592,7 @@ socket_t create_socket(const std::string &host, const std::string &ip, int port,
+   auto service = std::to_string(port);
+ 
+   if (getaddrinfo(node, service.c_str(), &hints, &result)) {
+-#if defined __linux__ && !defined __ANDROID__
++#if defined __linux__ && !defined __ANDROID__ && !defined __OPENHARMONY__
+     res_init();
+ #endif
+     return INVALID_SOCKET;
+@@ -5736,7 +5736,7 @@ inline void hosted_at(const std::string &hostname,
+   hints.ai_protocol = 0;
+ 
+   if (getaddrinfo(hostname.c_str(), nullptr, &hints, &result)) {
+-#if defined __linux__ && !defined __ANDROID__
++#if defined __linux__ && !defined __ANDROID__ && !defined__OPENHARMONY__
+     res_init();
+ #endif
+     return;
+diff --git a/examples/server/server.cpp b/examples/server/server.cpp
+index 2306dc26..f8d1cbe3 100644
+--- a/examples/server/server.cpp
++++ b/examples/server/server.cpp
+@@ -1,3 +1,5 @@
++#include "server.h"
++
+ #include "utils.hpp"
+ 
+ #include "arg.h"
+@@ -3351,7 +3353,7 @@ inline void signal_handler(int signal) {
+     shutdown_handler(signal);
+ }
+ 
+-int main(int argc, char ** argv) {
++int cli_main(int argc, char ** argv) {
+     // own arguments required by this example
+     common_params params;
+ 
+@@ -4504,3 +4506,9 @@ int main(int argc, char ** argv) {
+ 
+     return 0;
+ }
++
++bool ping(std::string host, int port) {
++    httplib::Client ping_client(host, port);
++    auto res = ping_client.Get("/health");
++    return res->status == httplib::OK_200;
++}
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+index 72325349..2755faad 100644
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -13682,7 +13682,7 @@ static bool ggml_thread_apply_affinity(const bool * mask) {
+         }
+     }
+ 
+-#ifdef __ANDROID__
++#if defined(__ANDROID__) || defined(__OPENHARMONY__)
+     err = sched_setaffinity(0, sizeof(cpuset), &cpuset);
+     if (err < 0) {
+         err = errno;

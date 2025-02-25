@@ -1,3 +1,19 @@
+
+# llama.OH
+
+llama.cpp ported to OpenHarmomy platform.
+
+
+build script: `ohos-build.sh`
+
+
+modification patch made to corresponding upstream branch: `ohos.patch`；
+
+More Info about llama.cpp: [llama.cpp - github](https://github.com/ggml-org/llama.cpp)；
+
+
+---
+
 # llama.cpp
 
 ![llama](https://user-images.githubusercontent.com/1991296/230134379-7181e485-c521-4d23-a0d6-f7b3b61ba524.png)

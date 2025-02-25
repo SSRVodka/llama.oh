@@ -1,3 +1,5 @@
+#include "server.h"
+
 #include "utils.hpp"
 
 #include "arg.h"
@@ -3351,7 +3353,7 @@ inline void signal_handler(int signal) {
     shutdown_handler(signal);
 }
 
-int main(int argc, char ** argv) {
+int cli_main(int argc, char ** argv) {
     // own arguments required by this example
     common_params params;
 
@@ -4503,4 +4505,10 @@ int main(int argc, char ** argv) {
     // t.join(); // FIXME: http thread may stuck if there is an on-going request. we don't need to care about this for now as the HTTP connection will already be closed at this point, but it's better to fix this
 
     return 0;
+}
+
+bool ping(std::string host, int port) {
+    httplib::Client ping_client(host, port);
+    auto res = ping_client.Get("/health");
+    return res->status == httplib::OK_200;
 }

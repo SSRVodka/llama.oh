@@ -10,6 +10,7 @@ if (MINGW)
 endif()
 
 set(TARGET_SRCS
+    server.h
     server.cpp
     utils.hpp
     httplib.h
@@ -31,7 +32,7 @@ foreach(asset ${PUBLIC_ASSETS})
     set_source_files_properties(${output} PROPERTIES GENERATED TRUE)
 endforeach()
 
-add_executable(${TARGET} ${TARGET_SRCS})
+add_library(${TARGET} SHARED ${TARGET_SRCS})
 install(TARGETS ${TARGET} RUNTIME)
 
 target_include_directories(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR})

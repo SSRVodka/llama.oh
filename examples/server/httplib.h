@@ -3592,7 +3592,7 @@ socket_t create_socket(const std::string &host, const std::string &ip, int port,
   auto service = std::to_string(port);
 
   if (getaddrinfo(node, service.c_str(), &hints, &result)) {
-#if defined __linux__ && !defined __ANDROID__
+#if defined __linux__ && !defined __ANDROID__ && !defined __OPENHARMONY__
     res_init();
 #endif
     return INVALID_SOCKET;
@@ -5736,7 +5736,7 @@ inline void hosted_at(const std::string &hostname,
   hints.ai_protocol = 0;
 
   if (getaddrinfo(hostname.c_str(), nullptr, &hints, &result)) {
-#if defined __linux__ && !defined __ANDROID__
+#if defined __linux__ && !defined __ANDROID__ && !defined__OPENHARMONY__
     res_init();
 #endif
     return;

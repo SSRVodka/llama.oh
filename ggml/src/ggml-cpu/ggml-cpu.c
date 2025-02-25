@@ -13682,7 +13682,7 @@ static bool ggml_thread_apply_affinity(const bool * mask) {
         }
     }
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__OPENHARMONY__)
     err = sched_setaffinity(0, sizeof(cpuset), &cpuset);
     if (err < 0) {
         err = errno;
